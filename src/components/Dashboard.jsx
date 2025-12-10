@@ -7,20 +7,13 @@ const Dashboard = ({ children, activeMenu }) => {
   const { user } = useContext(AppContext);
 
   return (
-    <div className="min-h-screen w-full relative overflow-hidden bg-slate-950 text-slate-50">
-      {/* Background glows */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-40 -left-32 h-80 w-80 rounded-full bg-teal-500/20 blur-3xl" />
-        <div className="absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-violet-500/25 blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-emerald-500/10 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen w-full bg-slate-50 text-slate-900 flex flex-col">
       {/* Top bar */}
       <Menubar activeMenu={activeMenu} />
 
       {/* Main layout */}
       {user && (
-        <div className="flex">
+        <div className="flex flex-1">
           {/* Sidebar (desktop) */}
           <div className="hidden lg:block">
             <Sidebar activeMenu={activeMenu} />

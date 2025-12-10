@@ -9,13 +9,13 @@ const Sidebar = ({ activeMenu }) => {
   const navigate = useNavigate();
 
   return (
-    <aside className="w-64 h-[calc(100vh-52px)] border-r border-slate-800/80 bg-slate-950/80 px-4 py-5 backdrop-blur-xl">
+    <aside className="w-64 h-[calc(100vh-56px)] border-r border-slate-200 bg-white/90 px-4 py-5 backdrop-blur-sm">
       {/* User avatar */}
       <div className="mt-2 mb-8 flex flex-col items-center justify-center gap-3">
         <div className="relative h-20 w-20">
           {/* Gradient ring */}
           <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-teal-400 via-emerald-400 to-violet-500 opacity-80" />
-          <div className="absolute inset-[3px] rounded-full bg-slate-950 flex items-center justify-center overflow-hidden">
+          <div className="absolute inset-[3px] rounded-full bg-white flex items-center justify-center overflow-hidden">
             {user?.profileImageUrl ? (
               <img
                 src={user.profileImageUrl}
@@ -28,7 +28,7 @@ const Sidebar = ({ activeMenu }) => {
           </div>
         </div>
 
-        <h5 className="text-sm font-medium text-slate-100">{user?.fullName || 'Guest'}</h5>
+        <h5 className="text-sm font-medium text-slate-900">{user?.fullName || 'Guest'}</h5>
         <p className="text-xs text-slate-500">{user?.email || ''}</p>
       </div>
 
@@ -43,13 +43,13 @@ const Sidebar = ({ activeMenu }) => {
               onClick={() => navigate(item.path)}
               className={`group flex w-full items-center gap-3 rounded-xl px-4 py-2.5 text-sm transition ${
                 isActive
-                  ? 'bg-gradient-to-r from-teal-500 via-emerald-400 to-violet-500 text-slate-950 shadow-[0_0_25px_rgba(45,212,191,0.55)]'
-                  : 'text-slate-300 hover:bg-slate-900/80 hover:text-slate-50'
+                  ? 'bg-gradient-to-r from-teal-500 via-emerald-400 to-violet-500 text-slate-950 shadow-[0_0_18px_rgba(56,189,248,0.35)]'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
               }`}
             >
               <item.icon
                 className={`h-4 w-4 ${
-                  isActive ? 'text-slate-950' : 'text-slate-400 group-hover:text-teal-300'
+                  isActive ? 'text-slate-950' : 'text-slate-400 group-hover:text-teal-500'
                 }`}
               />
               <span className="truncate">{item.label}</span>
