@@ -1,8 +1,13 @@
-const Income = () => {
+import Dashboard from '../components/Dashboard.jsx';
+import { useUser } from '../hooks/useUser.jsx';
 
-    return (
-        <div>Income</div>
-    )
-}
+const Income = () => {
+  useUser();
+  return (
+    <div>
+      <Dashboard activeMenu="Income">This is income page</Dashboard>
+    </div>
+  );
+};
 
 export default Income;
