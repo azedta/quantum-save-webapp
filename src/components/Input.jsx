@@ -1,11 +1,23 @@
-import { useState } from 'react';
-import { Eye, EyeOff } from 'lucide-react';
+import {useState} from 'react';
+import {Eye, EyeOff} from 'lucide-react';
 
-const Input = ({ label, value, onChange, placeholder, type, isSelect, options }) => {
+const Input = ({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+  isSelect = false,
+  options = [],
+}) => {
   const [showPassword, setShowPassword] = useState(false);
 
   const isPassword = type === 'password';
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type;
+
+  const baseInputClasses =
+    'w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition ' +
+    'placeholder:text-slate-400 focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30';
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -14,12 +26,13 @@ const Input = ({ label, value, onChange, placeholder, type, isSelect, options })
           {label}
         </label>
       )}
+
       <div className="relative">
         {isSelect ? (
           <select
-            className="w-full bg-transparent outline-none border border-gray-300 rounded-md py-2 px-3 text-gray-700 leading focus:outline-none focus:border-blue-500"
+            className={`${baseInputClasses} appearance-none pr-8`}
             value={value}
-            onChange={(e) => onChange(e)}
+            onChange={(e) => onChange(e.target.value)}
           >
             {options.map((option) => (
               <option key={option.value} value={option.value}>
@@ -29,16 +42,16 @@ const Input = ({ label, value, onChange, placeholder, type, isSelect, options })
           </select>
         ) : (
           <input
-            className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-10 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition
-                     focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30 focus:ring-offset-0"
+            className={`${baseInputClasses} pr-10`}
             type={inputType}
             placeholder={placeholder}
             value={value}
-            onChange={onChange}
+            onChange={(e) => onChange(e.target.value)}
           />
         )}
 
-        {isPassword && (
+        {/* Password toggle */}
+        {isPassword && !isSelect && (
           <button
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
@@ -52,8 +65,8 @@ const Input = ({ label, value, onChange, placeholder, type, isSelect, options })
           </button>
         )}
 
-        {/* subtle inner outline for a soft, premium feel */}
-        <div className="pointer-events-none absolute inset-px rounded-xl border border-white shadow-[0_0_10px_rgba(148,163,184,0.15)]" />
+        {/* subtle inner highlight */}
+        <div className="pointer-events-none absolute inset-px rounded-xl border border-white/60 shadow-[0_0_8px_rgba(148,163,184,0.12)]" />
       </div>
     </div>
   );
