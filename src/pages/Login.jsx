@@ -115,14 +115,14 @@ const Login = () => {
             <div className="space-y-4">
               <Input
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 label="Email address"
                 placeholder="name@example.com"
                 type="email"
               />
               <Input
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={setPassword}
                 label="Password"
                 placeholder="Enter your password"
                 type="password"

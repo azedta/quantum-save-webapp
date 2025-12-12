@@ -130,14 +130,14 @@ const Signup = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
+                onChange={setFullName}
                 label="Full name"
                 placeholder="John Smith"
                 type="text"
               />
               <Input
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={setEmail}
                 label="Email address"
                 placeholder="name@example.com"
                 type="email"
@@ -145,7 +145,7 @@ const Signup = () => {
               <div className="sm:col-span-2">
                 <Input
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={setPassword}
                   label="Password"
                   placeholder="Create a strong password"
                   type="password"
