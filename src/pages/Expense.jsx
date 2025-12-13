@@ -1,8 +1,8 @@
-import {useContext, useEffect, useState} from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Dashboard from '../components/Dashboard.jsx';
-import {useUser} from '../hooks/useUser.jsx';
+import { useUser } from '../hooks/useUser.jsx';
 import axiosConfig from '../util/axiosConfig.jsx';
-import {API_ENDPOINTS} from '../util/apiEndpoints.js';
+import { API_ENDPOINTS } from '../util/apiEndpoints.js';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal.jsx';
 import DeleteAlert from '../components/DeleteAlert.jsx';
@@ -11,7 +11,7 @@ import ExpenseOverview from '../components/ExpenseOverview.jsx';
 import ExpenseList from '../components/ExpenseList.jsx';
 import AddExpenseForm from '../components/AddExpenseForm.jsx';
 
-import {AppContext} from '../context/AppContext.jsx';
+import { AppContext } from '../context/AppContext.jsx';
 
 const STALE_TIME_MS = 60_000; // 1 minute
 
@@ -78,7 +78,7 @@ const Expense = () => {
       const now = Date.now();
       const isStale = !expenseFetchedAt || now - expenseFetchedAt > STALE_TIME_MS;
 
-      // If we already have data and it's not stale, do nothing
+      // If we already have data, and it's not stale, do nothing
       if (expenseData.length > 0 && !isStale) return;
 
       setLoading(true);
