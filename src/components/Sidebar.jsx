@@ -9,7 +9,7 @@ const Sidebar = ({ activeMenu }) => {
   const navigate = useNavigate();
 
   return (
-    <aside className="w-64 h-[calc(100vh-56px)] border-r border-slate-200 bg-white/90 px-4 py-5 backdrop-blur-sm">
+    <aside className="w-64 shrink-0 sticky top-[56px] h-[calc(100vh-56px)] overflow-y-auto border-r border-slate-200 bg-white/90 px-4 py-5 backdrop-blur-sm">
       {/* User avatar */}
       <div className="mt-2 mb-8 flex flex-col items-center justify-center gap-3">
         <div className="relative h-20 w-20">

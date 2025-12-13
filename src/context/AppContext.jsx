@@ -5,15 +5,35 @@ export const AppContext = createContext();
 export const AppContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
-  const clearUser = () => {
-    setUser(null);
-  };
+  // ✅ Cached data
+  const [incomeData, setIncomeData] = useState([]);
+  const [expenseData, setExpenseData] = useState([]);
 
-  const contextValue = {
-    user,
-    setUser,
-    clearUser,
-  };
+  // ✅ Timestamps (for stale logic)
+  const [incomeFetchedAt, setIncomeFetchedAt] = useState(null);
+  const [expenseFetchedAt, setExpenseFetchedAt] = useState(null);
 
-  return <AppContext.Provider value={contextValue}>{children}</AppContext.Provider>;
+  const clearUser = () => setUser(null);
+
+  return (
+    <AppContext.Provider
+      value={{
+        user,
+        setUser,
+        clearUser,
+
+        incomeData,
+        setIncomeData,
+        incomeFetchedAt,
+        setIncomeFetchedAt,
+
+        expenseData,
+        setExpenseData,
+        expenseFetchedAt,
+        setExpenseFetchedAt,
+      }}
+    >
+      {children}
+    </AppContext.Provider>
+  );
 };
