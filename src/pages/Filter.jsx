@@ -21,6 +21,7 @@ const Filter = () => {
   useUser();
 
   const [type, setType] = useState('income');
+  const [resultsType, setResultsType] = useState('income');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -94,6 +95,7 @@ const Filter = () => {
         sortOrder,
       });
       setTransactions(response.data || []);
+      setResultsType(type); // ✅ lock colors to the search type
     } catch (error) {
       console.error('Failed to fetch transactions', error);
       toast.error(
@@ -237,7 +239,7 @@ const Filter = () => {
                   icon={transaction.icon}
                   date={moment(transaction.date).format('Do MMM YYYY')}
                   amount={transaction.amount}
-                  type={type}
+                  type={transaction.type ?? resultsType}
                   hideDeleteBtn
                 />
               ))}
