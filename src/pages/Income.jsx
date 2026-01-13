@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import Dashboard from '../components/Dashboard.jsx';
 import { useUser } from '../hooks/useUser.jsx';
 import axiosConfig from '../util/axiosConfig.jsx';
@@ -13,9 +13,8 @@ import AddIncomeForm from '../components/AddIncomeForm.jsx';
 
 import { AppContext } from '../context/AppContext.jsx';
 
-const STALE_TIME_MS = 60_000; // 1 minute
+const STALE_TIME_MS = 60_000;
 
-// ✅ Skeletons to prevent flicker
 const CardSkeleton = () => (
   <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
     <div className="h-5 w-44 bg-slate-100 rounded animate-pulse" />
@@ -49,42 +48,61 @@ const ListSkeleton = () => (
 );
 
 const Income = () => {
-  useUser();
+  const { user, authLoading } = useUser(); // ✅ IMPORTANT (gate requests)
 
-  // ✅ Cached across navigation
-  const { incomeData, setIncomeData, incomeFetchedAt, setIncomeFetchedAt } = useContext(AppContext);
+  const {
+    incomeData,
+    setIncomeData,
+    incomeFetchedAt,
+    setIncomeFetchedAt,
+    categories,
+    fetchCategories,
+    categoriesLoaded,
+    fetchDashboardData,
+    invalidateDashboard,
+  } = useContext(AppContext);
 
-  // ✅ Page-local state
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [openAddIncomeModal, setOpenAddIncomeModal] = useState(false);
   const [openDeleteAlert, setOpenDeleteAlert] = useState({ show: false, data: null });
 
+  const incomeCategories = useMemo(
+    () => categories.filter((c) => c.type === 'income'),
+    [categories],
+  );
+
+  const categoryIconById = useMemo(() => {
+    const map = new Map();
+    (categories ?? []).forEach((c) => map.set(Number(c.id), c.icon));
+    return map;
+  }, [categories]);
+
   const fetchIncomeDetails = async () => {
     const response = await axiosConfig.get(API_ENDPOINTS.GET_ALL_INCOMES);
-    if (response.status === 200) setIncomeData(response.data);
+    if (response.status === 200) setIncomeData(response.data ?? []);
   };
 
-  const fetchIncomeCategories = async () => {
-    const response = await axiosConfig.get(API_ENDPOINTS.CATEGORY_BY_TYPE('income'));
-    if (response.status === 200) setCategories(response.data);
-  };
-
-  // ✅ Only fetch if needed (cache + staleTime)
   useEffect(() => {
+    // ✅ wait auth
+    if (authLoading) return;
+    if (!user) return;
+
     const fetchIfNeeded = async () => {
       const now = Date.now();
       const isStale = !incomeFetchedAt || now - incomeFetchedAt > STALE_TIME_MS;
 
-      // If we already have data and it's not stale, do nothing
-      if (incomeData.length > 0 && !isStale) return;
+      // ✅ if we fetched recently (even if empty), and categories are ready, skip
+      if (!isStale && categoriesLoaded) return;
 
       setLoading(true);
       try {
-        await Promise.all([fetchIncomeDetails(), fetchIncomeCategories()]);
+        await Promise.all([
+          fetchIncomeDetails(),
+          categoriesLoaded ? Promise.resolve() : fetchCategories(),
+        ]);
         setIncomeFetchedAt(Date.now());
       } catch (error) {
+        if (error?.response?.status === 401) return;
         console.error('Failed to fetch income data:', error);
         toast.error(error.response?.data?.message || 'Failed to fetch income data');
       } finally {
@@ -94,7 +112,12 @@ const Income = () => {
 
     fetchIfNeeded();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user]);
+
+  const refreshDashboardHard = async () => {
+    invalidateDashboard?.();
+    await fetchDashboardData?.({ force: true });
+  };
 
   const handleAddIncome = async (income) => {
     const { name, amount, date, icon, categoryId } = income;
@@ -110,11 +133,15 @@ const Income = () => {
     if (!categoryId) return toast.error('Please select a category');
 
     try {
+      const resolvedIcon = icon?.toString().trim()
+        ? icon
+        : (categoryIconById.get(Number(categoryId)) ?? null);
+
       const response = await axiosConfig.post(API_ENDPOINTS.ADD_INCOME, {
-        name,
+        name: name.trim(),
         amount: Number(amount),
         date,
-        icon,
+        icon: resolvedIcon,
         categoryId: Number(categoryId),
       });
 
@@ -122,7 +149,7 @@ const Income = () => {
         setOpenAddIncomeModal(false);
         toast.success('Income added successfully');
 
-        await fetchIncomeDetails(); // update cache
+        await Promise.all([fetchIncomeDetails(), refreshDashboardHard()]);
         setIncomeFetchedAt(Date.now());
       }
     } catch (error) {
@@ -132,12 +159,20 @@ const Income = () => {
   };
 
   const deleteIncome = async (id) => {
-    try {
-      await axiosConfig.delete(API_ENDPOINTS.DELETE_INCOME(id));
-      setOpenDeleteAlert({ show: false, data: null });
-      toast.success('Income deleted successfully');
+    if (!id && id !== 0) return toast.error('Invalid income id');
 
-      await fetchIncomeDetails(); // update cache
+    try {
+      const res = await axiosConfig.delete(API_ENDPOINTS.DELETE_INCOME(id));
+
+      // ✅ Optimistic UI update (so deletion works even if refresh fails)
+      setIncomeData((prev) => (prev ?? []).filter((t) => t.id !== id));
+
+      setOpenDeleteAlert({ show: false, data: null });
+
+      toast.success(res?.data?.message || 'Income deleted successfully');
+
+      // ✅ Keep your dashboard + list consistent
+      await Promise.all([fetchIncomeDetails(), refreshDashboardHard()]);
       setIncomeFetchedAt(Date.now());
     } catch (error) {
       console.log('Error deleting income', error);
@@ -145,7 +180,6 @@ const Income = () => {
     }
   };
 
-  // OPTIONAL: only keep these if your backend supports them
   const handleDownloadIncomeDetails = async () => {
     try {
       const response = await axiosConfig.get(API_ENDPOINTS.INCOME_EXCEL_DOWNLOAD, {
@@ -179,10 +213,12 @@ const Income = () => {
     }
   };
 
+  const showSkeleton = authLoading || loading;
+
   return (
     <Dashboard activeMenu="Income">
       <div className="space-y-6 py-2">
-        {loading ? (
+        {showSkeleton ? (
           <>
             <CardSkeleton />
             <ListSkeleton />
@@ -191,7 +227,10 @@ const Income = () => {
           <>
             <IncomeOverview
               transactions={incomeData}
-              onAddIncome={() => setOpenAddIncomeModal(true)}
+              onAddIncome={async () => {
+                if (!categoriesLoaded) await fetchCategories();
+                setOpenAddIncomeModal(true);
+              }}
             />
 
             <IncomeList
@@ -208,7 +247,7 @@ const Income = () => {
           onClose={() => setOpenAddIncomeModal(false)}
           title="Add Income"
         >
-          <AddIncomeForm onAddIncome={handleAddIncome} categories={categories} />
+          <AddIncomeForm onAddIncome={handleAddIncome} categories={incomeCategories} />
         </Modal>
 
         <Modal

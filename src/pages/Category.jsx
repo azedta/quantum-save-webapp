@@ -10,28 +10,47 @@ import Modal from '../components/Modal.jsx';
 import AddCategoryForm from '../components/AddCategoryForm.jsx';
 import { AppContext } from '../context/AppContext.jsx';
 
-const Category = () => {
-  useUser();
+const normalizeName = (s) => (s ?? '').toString().trim().toLowerCase();
 
-  const { categories, categoriesLoading, fetchCategories } = useContext(AppContext);
+const Category = () => {
+  const { user, authLoading } = useUser(); // ✅ IMPORTANT
+
+  const {
+    categories = [],
+    categoriesLoading,
+    fetchCategories,
+    invalidateDashboard,
+    fetchDashboardData,
+  } = useContext(AppContext);
 
   const [openAddCategoryModal, setOpenAddCategoryModal] = useState(false);
   const [openEditCategoryModal, setOpenEditCategoryModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   useEffect(() => {
+    // ✅ wait for auth to finish
+    if (authLoading) return;
+
+    // ✅ not logged in => don't call protected endpoints
+    if (!user) return;
+
     fetchCategories().catch((error) => {
+      if (error?.response?.status === 401) return; // avoid console spam
       console.error('Something went wrong. Please try again.', error);
       toast.error(error?.response?.data?.message || error.message);
     });
-  }, [fetchCategories]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user]);
 
   const handleAddCategory = async (category) => {
-    const { name, type, icon } = category;
+    const name = (category?.name ?? '').trim();
+    const type = category?.type;
+    const icon = category?.icon;
 
-    if (!name.trim()) return toast.error('Category name is required');
+    if (!name) return toast.error('Category name is required');
 
-    const isDuplicate = categories.some((c) => c.name.toLowerCase() === name.toLowerCase().trim());
+    const isDuplicate = categories.some((c) => normalizeName(c?.name) === normalizeName(name));
     if (isDuplicate) return toast.error('Category name already exists');
 
     try {
@@ -39,7 +58,12 @@ const Category = () => {
       if (response.status === 201) {
         toast.success('Category added successfully.');
         setOpenAddCategoryModal(false);
-        await fetchCategories({ force: true }); // refresh shared cache
+
+        await fetchCategories({ force: true });
+
+        // ✅ refresh dashboard too (optional but ok)
+        invalidateDashboard?.();
+        await fetchDashboardData?.({ force: true });
       }
     } catch (error) {
       console.error('Error adding category', error);
@@ -47,23 +71,36 @@ const Category = () => {
     }
   };
 
-  const handleEditCategory = async (categoryToEdit) => {
+  const handleEditCategory = (categoryToEdit) => {
     setSelectedCategory(categoryToEdit);
     setOpenEditCategoryModal(true);
   };
 
   const handleUpdateCategory = async (updatedCategory) => {
-    const { id, name, type, icon } = updatedCategory;
+    const id = updatedCategory?.id;
+    const name = (updatedCategory?.name ?? '').trim();
+    const type = updatedCategory?.type;
+    const icon = updatedCategory?.icon;
 
-    if (!name.trim()) return toast.error('Category name is required');
+    if (!name) return toast.error('Category name is required');
     if (!id) return toast.error('Category ID is required');
+
+    const isDuplicate = categories.some(
+      (c) => c?.id !== id && normalizeName(c?.name) === normalizeName(name),
+    );
+    if (isDuplicate) return toast.error('Category name already exists');
 
     try {
       await axiosConfig.put(API_ENDPOINTS.UPDATE_CATEGORY(id), { name, type, icon });
+
       setOpenEditCategoryModal(false);
       setSelectedCategory(null);
       toast.success('Category updated successfully.');
-      await fetchCategories({ force: true }); // refresh shared cache
+
+      await fetchCategories({ force: true });
+
+      invalidateDashboard?.();
+      await fetchDashboardData?.({ force: true });
     } catch (error) {
       console.error('Error updating category', error.response?.data?.message || error.message);
       toast.error(error.response?.data?.message || 'Failed to update category.');
@@ -97,7 +134,7 @@ const Category = () => {
                     Total
                   </span>
                   <span className="text-[11px] font-semibold text-slate-900">
-                    {(categories ?? []).length}
+                    {categories.length}
                   </span>
                 </div>
               </div>
@@ -115,7 +152,7 @@ const Category = () => {
 
         {/* List */}
         <CategoryList
-          loading={categoriesLoading}
+          loading={categoriesLoading || authLoading}
           categories={categories}
           onEditCategory={handleEditCategory}
           onCreate={() => setOpenAddCategoryModal(true)}

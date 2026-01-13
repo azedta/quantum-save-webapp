@@ -1,4 +1,4 @@
-import { createContext, useCallback, useMemo, useState } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axiosConfig from '../util/axiosConfig.jsx';
 import { API_ENDPOINTS } from '../util/apiEndpoints.js';
 
@@ -9,86 +9,144 @@ export const AppContextProvider = ({ children }) => {
   const [user, _setUser] = useState(null);
   const setUser = useCallback((u) => _setUser(u), []);
 
+  // ─────────────── AUTH LOADING ───────────────
+  const [authLoading, setAuthLoading] = useState(true);
+
   // ─────────────── DASHBOARD CACHE ───────────────
+  const EMPTY_DASHBOARD = useMemo(
+    () => ({
+      totalBalance: 0,
+      totalIncome: 0,
+      totalExpense: 0,
+      recentTransactions: [],
+      recent5Expenses: [],
+      recent5Incomes: [],
+    }),
+    [],
+  );
+
   const [dashboardData, setDashboardData] = useState(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
 
+  // ✅ refs avoid dependency loops
+  const dashboardLoadingRef = useRef(false);
+  const dashboardDataRef = useRef(null);
+
+  useEffect(() => {
+    dashboardLoadingRef.current = dashboardLoading;
+  }, [dashboardLoading]);
+
+  useEffect(() => {
+    dashboardDataRef.current = dashboardData;
+  }, [dashboardData]);
+
+  const invalidateDashboard = useCallback(() => {
+    setDashboardData(null);
+    dashboardDataRef.current = null;
+  }, []);
+
   const fetchDashboardData = useCallback(
     async ({ force = false } = {}) => {
-      if (dashboardLoading) return;
-      if (dashboardData && !force) return;
+      const token = localStorage.getItem('token');
+      if (!token) return;
 
+      if (dashboardLoadingRef.current) return;
+      if (dashboardDataRef.current && !force) return;
+
+      dashboardLoadingRef.current = true;
       setDashboardLoading(true);
+
       try {
         const res = await axiosConfig.get(API_ENDPOINTS.DASHBOARD_DATA);
-        if (res.status === 200) setDashboardData(res.data);
+        const data = res?.data ?? EMPTY_DASHBOARD; // ✅ safe default for new users
+        setDashboardData(data);
+        dashboardDataRef.current = data;
       } finally {
+        dashboardLoadingRef.current = false;
         setDashboardLoading(false);
       }
     },
-    [dashboardLoading, dashboardData],
+    [EMPTY_DASHBOARD],
   );
 
   // ─────────────── CATEGORIES CACHE ───────────────
-  const [categories, _setCategories] = useState([]); // ✅ always array
-  const setCategories = useCallback((arr) => _setCategories(arr), []);
+  const [categories, setCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
+  const [categoriesLoaded, setCategoriesLoaded] = useState(false);
+
+  const invalidateCategories = useCallback(() => {
+    setCategoriesLoaded(false);
+  }, []);
 
   const fetchCategories = useCallback(
     async ({ force = false } = {}) => {
       if (categoriesLoading) return;
-      if (categories.length > 0 && !force) return;
+      if (categoriesLoaded && !force) return;
 
       setCategoriesLoading(true);
       try {
         const res = await axiosConfig.get(API_ENDPOINTS.GET_ALL_CATEGORIES);
-        if (res.status === 200) _setCategories(res.data);
+        if (res.status === 200) {
+          setCategories(res.data ?? []);
+          setCategoriesLoaded(true);
+        }
       } finally {
         setCategoriesLoading(false);
       }
     },
-    [categoriesLoading, categories.length],
+    [categoriesLoading, categoriesLoaded],
   );
 
   // ─────────────── INCOME CACHE ───────────────
-  const [incomeData, setIncomeData] = useState([]); // ✅ always array
+  const [incomeData, setIncomeData] = useState([]);
   const [incomeFetchedAt, setIncomeFetchedAt] = useState(null);
 
   // ─────────────── EXPENSE CACHE ───────────────
-  const [expenseData, setExpenseData] = useState([]); // ✅ always array
+  const [expenseData, setExpenseData] = useState([]);
   const [expenseFetchedAt, setExpenseFetchedAt] = useState(null);
 
   // ─────────────── CLEAR USER ───────────────
   const clearUser = useCallback(() => {
     _setUser(null);
 
-    // clear app caches
     setDashboardData(null);
-    _setCategories([]);
+    dashboardDataRef.current = null;
+
+    setCategories([]);
+    setCategoriesLoaded(false);
 
     setIncomeData([]);
     setExpenseData([]);
     setIncomeFetchedAt(null);
     setExpenseFetchedAt(null);
+
+    // ✅ auth check is done (user is logged out)
+    setAuthLoading(false);
   }, []);
 
   const value = useMemo(
     () => ({
-      // user
+      // user + auth
       user,
       setUser,
       clearUser,
+      authLoading,
+      setAuthLoading,
 
-      // dashboard (Home.jsx depends on these) :contentReference[oaicite:1]{index=1}
+      // dashboard
       dashboardData,
       dashboardLoading,
       fetchDashboardData,
+      invalidateDashboard,
 
-      // categories (Category.jsx depends on these) :contentReference[oaicite:2]{index=2}
+      // categories
       categories,
       categoriesLoading,
+      categoriesLoaded,
+      setCategoriesLoaded,
       fetchCategories,
       setCategories,
+      invalidateCategories,
 
       // income
       incomeData,
@@ -106,15 +164,18 @@ export const AppContextProvider = ({ children }) => {
       user,
       setUser,
       clearUser,
+      authLoading,
 
       dashboardData,
       dashboardLoading,
       fetchDashboardData,
+      invalidateDashboard,
 
       categories,
       categoriesLoading,
+      categoriesLoaded,
       fetchCategories,
-      setCategories,
+      invalidateCategories,
 
       incomeData,
       incomeFetchedAt,

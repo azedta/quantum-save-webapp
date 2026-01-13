@@ -4,7 +4,7 @@ import InfoCard from '../components/InfoCard.jsx';
 import { Coins, Wallet, WalletCards } from 'lucide-react';
 import { addThousandsSeparator } from '../util/util.js';
 import { useNavigate } from 'react-router-dom';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import RecentTransactions from '../components/RecentTransactions.jsx';
 import FinanceOverview from '../components/FinanceOverview.jsx';
@@ -34,24 +34,38 @@ const GridSkeleton = () => (
 );
 
 const Home = () => {
-  useUser();
-
+  const { user, authLoading } = useUser();
   const navigate = useNavigate();
+
   const { dashboardData, dashboardLoading, fetchDashboardData } = useContext(AppContext);
 
+  // ✅ Prevent refetch spamming (especially in React strict mode / navigation)
+  const didFetchRef = useRef(false);
+
   useEffect(() => {
-    // Fetch once; context caches it
-    fetchDashboardData().catch((error) => {
+    if (authLoading) return;
+    if (!user) return;
+
+    // ✅ if we already fetched once AND we already have data, don't refetch
+    if (didFetchRef.current && dashboardData) return;
+
+    didFetchRef.current = true;
+
+    fetchDashboardData({ force: false }).catch((error) => {
+      if (error?.response?.status === 401) return;
       console.error('Something went wrong while fetching dashboard data', error);
       toast.error(error?.response?.data?.message || 'Something went wrong!');
     });
-  }, [fetchDashboardData]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authLoading, user]); // ✅ removed location.key and force:true
+
+  const showSkeleton = authLoading || (dashboardLoading && !dashboardData);
 
   return (
     <Dashboard activeMenu="Dashboard">
       <div className="my-5 mx-auto space-y-6">
-        {/* Top cards */}
-        {dashboardLoading && !dashboardData ? (
+        {showSkeleton ? (
           <CardRowSkeleton />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -76,8 +90,7 @@ const Home = () => {
           </div>
         )}
 
-        {/* Main grid */}
-        {dashboardLoading && !dashboardData ? (
+        {showSkeleton ? (
           <GridSkeleton />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

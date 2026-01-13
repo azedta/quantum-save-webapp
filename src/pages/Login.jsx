@@ -7,13 +7,16 @@ import { API_ENDPOINTS } from '../util/apiEndpoints.js';
 import axiosConfig from '../util/axiosConfig.jsx';
 import { AppContext } from '../context/AppContext.jsx';
 import { LoaderCircle } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const { setUser } = useContext(AppContext);
   const navigate = useNavigate();
@@ -22,6 +25,7 @@ const Login = () => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setInfo(null);
 
     // BASIC Validation
     if (!email.trim()) {
@@ -48,12 +52,23 @@ const Login = () => {
         password,
       });
 
-      const { token, user } = response.data;
-      if (token) {
-        localStorage.setItem('token', token);
-        setUser(user);
-        navigate('/dashboard');
+      const { token, user, isActive, message } = response.data;
+
+      // backend can return a success token even if account isn't active
+      if (token) localStorage.setItem('token', token);
+      if (user) setUser(user);
+
+      if (isActive === false) {
+        setInfo(
+          message ||
+            "Your account isn't activated yet. Please check your email for the verification link.",
+        );
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`, { replace: true });
+        return;
       }
+
+      if (message) toast.success(message);
+      navigate('/dashboard');
     } catch (error) {
       if (error.response && error.response.data.message) {
         setError(error.response.data.message);
@@ -63,6 +78,33 @@ const Login = () => {
       }
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setError(null);
+    setInfo(null);
+
+    if (!email.trim()) {
+      setError('Enter your email first, then click resend.');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email');
+      return;
+    }
+
+    try {
+      setIsResending(true);
+      const res = await axiosConfig.post(API_ENDPOINTS.RESEND_VERIFICATION, { email });
+      toast.success(res?.data || 'If eligible, a verification email has been sent.');
+      setInfo('If the account exists and is not active, a fresh verification link is on the way.');
+    } catch (e) {
+      console.error('Resend verification failed:', e);
+      toast.error('Could not resend right now. Please try again.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -128,6 +170,24 @@ const Login = () => {
                 type="password"
               />
             </div>
+
+            {info && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 text-center">
+                <p>{info}</p>
+                <button
+                  type="button"
+                  disabled={isResending}
+                  onClick={handleResendVerification}
+                  className={
+                    isResending
+                      ? 'mt-2 inline-flex items-center justify-center rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 opacity-60 cursor-not-allowed'
+                      : 'mt-2 inline-flex items-center justify-center rounded-lg border border-amber-200 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 hover:bg-amber-100'
+                  }
+                >
+                  {isResending ? 'Resending…' : 'Resend verification link'}
+                </button>
+              </div>
+            )}
 
             {error && (
               <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 text-center">

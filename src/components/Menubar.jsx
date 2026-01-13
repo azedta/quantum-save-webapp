@@ -14,10 +14,10 @@ const Menubar = ({ activeMenu }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem('token');
     setShowDropdown(false);
     clearUser?.();
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   useEffect(() => {

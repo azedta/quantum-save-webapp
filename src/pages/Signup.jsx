@@ -67,8 +67,8 @@ const Signup = () => {
       });
 
       if (response.status === 201) {
-        toast.success('Profile created successfully.');
-        navigate('/login');
+        toast.success('Account created. Check your email to activate your account.');
+        navigate(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch (err) {
       console.error('Something went wrong', err);

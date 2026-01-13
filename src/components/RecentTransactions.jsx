@@ -31,7 +31,7 @@ const RecentTransactions = ({ transactions = [], onMore }) => {
         ) : (
           list.map((item) => (
             <TransactionInfoCard
-              key={item.id}
+              key={`${item.type}-${item.id}`}
               title={item.name}
               icon={item.icon}
               date={moment(item.date).format('Do MMM YYYY')}

@@ -10,14 +10,19 @@ const axiosConfig = axios.create({
 });
 
 // List of endpoints that do NOT require Authorization header
-const excludeEndpoints = ['/login', '/register', '/status', '/activate', '/health'];
+const excludeEndpoints = [
+  '/login',
+  '/register',
+  '/activate',
+  '/resend-verification',
+  '/status',
+  '/health',
+];
 
 // Request Interceptor
 axiosConfig.interceptors.request.use(
   (config) => {
-    const shouldSkipToken = excludeEndpoints.some((endpoint) => {
-      return config.url?.includes(endpoint);
-    });
+    const shouldSkipToken = excludeEndpoints.some((endpoint) => config.url?.startsWith(endpoint));
 
     if (!shouldSkipToken) {
       const accessToken = localStorage.getItem('token');
@@ -35,19 +40,16 @@ axiosConfig.interceptors.request.use(
 
 // Response Interceptor
 axiosConfig.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    if (error.response) {
-      if (error.response.status === 401) {
-        window.location.href = '/login';
-      } else if (error.response.status === 500) {
-        console.error('Server Error. Please try again later.');
-      }
-    } else if (error.code === 'ECONNABORTED') {
-      console.error('Request timed out. Please try again later.');
+    const status = error?.response?.status;
+    // ✅ DO NOT navigate/redirect here.
+    // Only log it. useUser() should be the only place that logs out.
+    if (status === 401) {
+      console.error('401 from:', error?.config?.url);
+      localStorage.removeItem('token');
     }
+
     return Promise.reject(error);
   },
 );

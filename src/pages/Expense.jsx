@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import Dashboard from '../components/Dashboard.jsx';
 import { useUser } from '../hooks/useUser.jsx';
 import axiosConfig from '../util/axiosConfig.jsx';
@@ -13,9 +13,8 @@ import AddExpenseForm from '../components/AddExpenseForm.jsx';
 
 import { AppContext } from '../context/AppContext.jsx';
 
-const STALE_TIME_MS = 60_000; // 1 minute
+const STALE_TIME_MS = 60_000;
 
-// ✅ Skeletons to prevent flicker
 const CardSkeleton = () => (
   <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_45px_rgba(15,23,42,0.05)]">
     <div className="h-5 w-44 bg-slate-100 rounded animate-pulse" />
@@ -49,43 +48,60 @@ const ListSkeleton = () => (
 );
 
 const Expense = () => {
-  useUser();
+  const { user, authLoading } = useUser(); // ✅ IMPORTANT
 
-  // ✅ Cached across navigation
-  const { expenseData, setExpenseData, expenseFetchedAt, setExpenseFetchedAt } =
-    useContext(AppContext);
+  const {
+    expenseData,
+    setExpenseData,
+    expenseFetchedAt,
+    setExpenseFetchedAt,
+    categories,
+    fetchCategories,
+    categoriesLoaded,
+    fetchDashboardData,
+    invalidateDashboard,
+  } = useContext(AppContext);
 
-  // ✅ Page-local state
-  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(false);
-
   const [openAddExpenseModal, setOpenAddExpenseModal] = useState(false);
   const [openDeleteAlert, setOpenDeleteAlert] = useState({ show: false, data: null });
 
+  const expenseCategories = useMemo(
+    () => categories.filter((c) => c.type === 'expense'),
+    [categories],
+  );
+
+  const categoryIconById = useMemo(() => {
+    const map = new Map();
+    (categories ?? []).forEach((c) => map.set(Number(c.id), c.icon));
+    return map;
+  }, [categories]);
+
   const fetchExpenseDetails = async () => {
     const response = await axiosConfig.get(API_ENDPOINTS.GET_ALL_EXPENSES);
-    if (response.status === 200) setExpenseData(response.data);
+    if (response.status === 200) setExpenseData(response.data ?? []);
   };
 
-  const fetchExpenseCategories = async () => {
-    const response = await axiosConfig.get(API_ENDPOINTS.CATEGORY_BY_TYPE('expense'));
-    if (response.status === 200) setCategories(response.data);
-  };
-
-  // ✅ Only fetch if needed (cache + staleTime)
   useEffect(() => {
+    if (authLoading) return;
+    if (!user) return;
+
     const fetchIfNeeded = async () => {
       const now = Date.now();
       const isStale = !expenseFetchedAt || now - expenseFetchedAt > STALE_TIME_MS;
 
-      // If we already have data, and it's not stale, do nothing
-      if (expenseData.length > 0 && !isStale) return;
+      // ✅ if we fetched recently (even if empty) + categories ready -> skip
+      if (!isStale && categoriesLoaded) return;
 
       setLoading(true);
       try {
-        await Promise.all([fetchExpenseDetails(), fetchExpenseCategories()]);
+        await Promise.all([
+          fetchExpenseDetails(),
+          categoriesLoaded ? Promise.resolve() : fetchCategories(),
+        ]);
         setExpenseFetchedAt(Date.now());
       } catch (error) {
+        if (error?.response?.status === 401) return;
         console.error('Failed to fetch expense data:', error);
         toast.error(error.response?.data?.message || 'Failed to fetch expense data');
       } finally {
@@ -95,7 +111,12 @@ const Expense = () => {
 
     fetchIfNeeded();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user]);
+
+  const refreshDashboardHard = async () => {
+    invalidateDashboard?.();
+    await fetchDashboardData?.({ force: true });
+  };
 
   const handleAddExpense = async (expense) => {
     const { name, amount, date, icon, categoryId } = expense;
@@ -111,11 +132,15 @@ const Expense = () => {
     if (!categoryId) return toast.error('Please select a category');
 
     try {
+      const resolvedIcon = icon?.toString().trim()
+        ? icon
+        : (categoryIconById.get(Number(categoryId)) ?? null);
+
       const response = await axiosConfig.post(API_ENDPOINTS.ADD_EXPENSE, {
-        name,
+        name: name.trim(),
         amount: Number(amount),
         date,
-        icon,
+        icon: resolvedIcon,
         categoryId: Number(categoryId),
       });
 
@@ -123,7 +148,7 @@ const Expense = () => {
         setOpenAddExpenseModal(false);
         toast.success('Expense added successfully');
 
-        await fetchExpenseDetails(); // update cache
+        await Promise.all([fetchExpenseDetails(), refreshDashboardHard()]);
         setExpenseFetchedAt(Date.now());
       }
     } catch (error) {
@@ -133,12 +158,19 @@ const Expense = () => {
   };
 
   const deleteExpense = async (id) => {
-    try {
-      await axiosConfig.delete(API_ENDPOINTS.DELETE_EXPENSE(id));
-      setOpenDeleteAlert({ show: false, data: null });
-      toast.success('Expense deleted successfully');
+    if (!id && id !== 0) return toast.error('Invalid expense id');
 
-      await fetchExpenseDetails(); // update cache
+    try {
+      const res = await axiosConfig.delete(API_ENDPOINTS.DELETE_EXPENSE(id));
+
+      // ✅ Optimistic UI update
+      setExpenseData((prev) => (prev ?? []).filter((t) => t.id !== id));
+
+      setOpenDeleteAlert({ show: false, data: null });
+
+      toast.success(res?.data?.message || 'Expense deleted successfully');
+
+      await Promise.all([fetchExpenseDetails(), refreshDashboardHard()]);
       setExpenseFetchedAt(Date.now());
     } catch (error) {
       console.log('Error deleting expense', error);
@@ -146,7 +178,6 @@ const Expense = () => {
     }
   };
 
-  // OPTIONAL: If your backend doesn't support these, remove buttons in ExpenseList
   const handleDownloadExpenseDetails = async () => {
     try {
       const response = await axiosConfig.get(API_ENDPOINTS.EXPENSE_EXCEL_DOWNLOAD, {
@@ -180,10 +211,12 @@ const Expense = () => {
     }
   };
 
+  const showSkeleton = authLoading || loading;
+
   return (
     <Dashboard activeMenu="Expense">
       <div className="space-y-6 py-2">
-        {loading ? (
+        {showSkeleton ? (
           <>
             <CardSkeleton />
             <ListSkeleton />
@@ -192,7 +225,10 @@ const Expense = () => {
           <>
             <ExpenseOverview
               transactions={expenseData}
-              onAddExpense={() => setOpenAddExpenseModal(true)}
+              onAddExpense={async () => {
+                if (!categoriesLoaded) await fetchCategories();
+                setOpenAddExpenseModal(true);
+              }}
             />
 
             <ExpenseList
@@ -209,7 +245,7 @@ const Expense = () => {
           onClose={() => setOpenAddExpenseModal(false)}
           title="Add Expense"
         >
-          <AddExpenseForm onAddExpense={handleAddExpense} categories={categories} />
+          <AddExpenseForm onAddExpense={handleAddExpense} categories={expenseCategories} />
         </Modal>
 
         <Modal

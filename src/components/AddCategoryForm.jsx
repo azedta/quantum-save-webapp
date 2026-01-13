@@ -1,10 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Input from './Input.jsx';
 import EmojiPickerPopup from './EmojiPickerPopup.jsx';
 import { LoaderCircle } from 'lucide-react';
 
 const AddCategoryForm = ({ onAddCategory, initialCategoryData, isEditing }) => {
+  const initialId = useMemo(() => initialCategoryData?.id ?? null, [initialCategoryData]);
+
   const [category, setCategory] = useState({
+    id: null,
     name: '',
     type: 'income',
     icon: '',
@@ -14,25 +17,57 @@ const AddCategoryForm = ({ onAddCategory, initialCategoryData, isEditing }) => {
 
   useEffect(() => {
     if (isEditing && initialCategoryData) {
-      setCategory(initialCategoryData);
+      // ✅ guarantee id is included
+      setCategory({
+        id: initialCategoryData.id ?? null,
+        name: initialCategoryData.name ?? '',
+        type: initialCategoryData.type ?? 'income',
+        icon: initialCategoryData.icon ?? '',
+      });
     } else {
-      setCategory({ name: '', type: 'income', icon: '' });
+      setCategory({ id: null, name: '', type: 'income', icon: '' });
     }
   }, [isEditing, initialCategoryData]);
 
-  const handleChange = (key, value) => setCategory((prev) => ({ ...prev, [key]: value }));
+  const handleChange = (key, value) =>
+    setCategory((prev) => ({
+      ...prev,
+      [key]: value,
+      // ✅ never lose the id while editing
+      ...(isEditing ? { id: prev.id ?? initialId } : {}),
+    }));
 
-  const handleSubmit = async () => {
+  const validate = () => {
+    if (!category.name?.trim()) return 'Please enter a category name';
+    if (!category.type) return 'Please select category type';
+    // icon optional — if you want to require it, uncomment:
+    // if (!category.icon) return 'Please choose an icon';
+    if (isEditing && !category.id) return 'Missing category id (cannot update)';
+    return null;
+  };
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault?.();
+
+    if (loading) return;
+
+    const error = validate();
+    if (error) return; // let Category.jsx show toast (or add toast here if you want)
+
     setLoading(true);
     try {
-      await onAddCategory(category);
+      const payload = isEditing
+        ? { ...category, id: category.id ?? initialId } // ✅ absolute guarantee
+        : { name: category.name.trim(), type: category.type, icon: category.icon };
+
+      await onAddCategory(payload);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="space-y-5">
+    <form onSubmit={handleSubmit} className="space-y-5">
       <EmojiPickerPopup
         icon={category.icon}
         onSelect={(selectedIcon) => handleChange('icon', selectedIcon)}
@@ -46,7 +81,6 @@ const AddCategoryForm = ({ onAddCategory, initialCategoryData, isEditing }) => {
         type="text"
       />
 
-      {/* Select (styled like your inputs) */}
       <div className="flex flex-col gap-1.5">
         <label className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
           Category type
@@ -64,8 +98,7 @@ const AddCategoryForm = ({ onAddCategory, initialCategoryData, isEditing }) => {
 
       <div className="flex justify-end pt-2">
         <button
-          type="button"
-          onClick={handleSubmit}
+          type="submit"
           disabled={loading}
           className={
             loading
@@ -83,7 +116,7 @@ const AddCategoryForm = ({ onAddCategory, initialCategoryData, isEditing }) => {
           )}
         </button>
       </div>
-    </div>
+    </form>
   );
 };
 
