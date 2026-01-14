@@ -1,16 +1,126 @@
-# React + Vite
+# 💸 Quantum Save — Web App (Frontend)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A production-style personal finance dashboard built with **React + Vite + Tailwind**.  
+Track **income**, **expenses**, and **categories** in real time, explore trends with **interactive charts 📊**, and keep the UI consistent across pages through an **auth-aware caching + invalidation strategy**.
 
-Currently, two official plugins are available:
+🌐 **Live Demo:** https://quantum-save-webapp.vercel.app  
+🧠 **Backend API:** https://github.com/azedta/quantum-save (Spring Boot + PostgreSQL)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## ✨ Highlights
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- 🔐 Auth-aware data fetching (no 401 spam, no infinite refetch loops)
+- 🔁 Cross-page consistency with targeted cache invalidation
+- ⏱️ Stale-time caching for fast navigation
+- 🦴 Skeleton loaders & empty states for smooth UX
+- 🔎 Smart Filters for slicing transactions
+- 📊 Insight layer with interactive charts
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## 🖼️ Screenshots
+
+Add screenshots under a `screenshots/` folder:
+
+- Dashboard
+- Income
+- Expense
+- Categories
+- Filters
+- Auth
+- Profile
+
+---
+
+## 🚀 Features
+
+### 🧩 Core Product
+- 🏠 Dashboard overview
+- 💰 Income management (add / list / delete + Excel export)
+- 💸 Expense management (add / list / delete + Excel export)
+- 🏷️ Categories with emoji icons 😄
+- 🧠 Smart Filters (date, keyword, sorting)
+- 🔐 Auth flows (login / signup / verify email)
+- 👤 Profile photo upload (Cloudinary ☁️)
+
+---
+
+## 🎨 UX & Engineering Highlights
+
+- 🔒 Auth-first request gating
+- ⏳ Stale-time caching + targeted invalidation
+- 🧪 React 18 StrictMode-safe fetching
+- ⚡ Skeleton loaders, modals, toasts
+- 📈 Custom Line & Pie charts with rich tooltips
+
+---
+
+## 🧰 Tech Stack
+
+- ⚛️ React + Vite
+- 🎨 Tailwind CSS
+- 🧭 React Router
+- 🔌 Axios
+- 📊 Recharts
+- 🔔 react-hot-toast
+- 🧩 Lucide Icons
+- ☁️ Cloudinary
+
+---
+
+## 🗂️ Project Structure
+
+```txt
+src/
+  assets/
+  components/
+  context/
+  hooks/
+  pages/
+  util/
+```
+
+---
+
+## 🔌 API Integration
+
+- JWT injected via Axios interceptor
+- Public endpoints excluded from auth
+- Logout handled centrally in `useUser()`
+
+---
+
+## 🔐 Environment Variables
+
+```bash
+VITE_API_BASE_URL=http://localhost:8080/api/v1.0
+```
+
+---
+
+## ▶️ Run Locally
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+## 🚢 Build & Deploy
+
+```bash
+npm run build
+npm run preview
+```
+
+Deployed on **Vercel** 🚀
+
+---
+
+### 📄 License
+
+This project is proprietary and protected under an All Rights Reserved license.
+
+The source code is provided for viewing and evaluation purposes only as part of a personal portfolio. Any use, reproduction, modification, or distribution without explicit permission from the author is prohibited.
