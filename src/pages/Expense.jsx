@@ -125,10 +125,6 @@ const Expense = () => {
     if (!amount || isNaN(amount) || Number(amount) < 0)
       return toast.error('Please enter a valid amount');
     if (!date) return toast.error('Please enter a valid date');
-
-    const today = new Date().toISOString().split('T')[0];
-    if (date > today) return toast.error('Date cannot be in the future');
-
     if (!categoryId) return toast.error('Please select a category');
 
     try {

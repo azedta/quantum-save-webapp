@@ -1,8 +1,8 @@
-import { useContext, useEffect, useMemo, useState } from 'react';
+import {useContext, useEffect, useMemo, useState} from 'react';
 import Dashboard from '../components/Dashboard.jsx';
-import { useUser } from '../hooks/useUser.jsx';
+import {useUser} from '../hooks/useUser.jsx';
 import axiosConfig from '../util/axiosConfig.jsx';
-import { API_ENDPOINTS } from '../util/apiEndpoints.js';
+import {API_ENDPOINTS} from '../util/apiEndpoints.js';
 import toast from 'react-hot-toast';
 import Modal from '../components/Modal.jsx';
 import DeleteAlert from '../components/DeleteAlert.jsx';
@@ -11,7 +11,7 @@ import IncomeOverview from '../components/IncomeOverview.jsx';
 import IncomeList from '../components/IncomeList.jsx';
 import AddIncomeForm from '../components/AddIncomeForm.jsx';
 
-import { AppContext } from '../context/AppContext.jsx';
+import {AppContext} from '../context/AppContext.jsx';
 
 const STALE_TIME_MS = 60_000;
 
@@ -126,10 +126,6 @@ const Income = () => {
     if (!amount || isNaN(amount) || Number(amount) < 0)
       return toast.error('Please enter a valid amount');
     if (!date) return toast.error('Please enter a valid date');
-
-    const today = new Date().toISOString().split('T')[0];
-    if (date > today) return toast.error('Date cannot be in the future');
-
     if (!categoryId) return toast.error('Please select a category');
 
     try {
