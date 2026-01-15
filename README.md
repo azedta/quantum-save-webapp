@@ -22,21 +22,27 @@ Track **income**, **expenses**, and **categories** in real time, explore trends 
 ## 🖼️ Screenshots
 
 ### 📊 Dashboard
+> A real-time snapshot of balance, income, expenses, and recent activity.
 ![Dashboard](./public/screenshots/dashboard.png)
 
 ### 🗂️ Categories
+> Centralized income and expense sources with emoji-based visual identifiers.
 ![Categories](./public/screenshots/categories.png)
 
 ### 💸 Expenses
+> Detailed expense tracking with trend visualization and export actions.
 ![Expenses](./public/screenshots/expense.png)
 
 ### 💰 Income
+> Income history with monthly trends and source-level breakdowns.
 ![Income](./public/screenshots/income.png)
 
 ### 🧠 Smart Filters
+> Powerful transaction filtering by date range, keyword, and sorting logic.
 ![Filters](./public/screenshots/filters.png)
 
 ### 🔐 Signup
+> Clean, guided onboarding with profile personalization from the start.
 ![Signup](./public/screenshots/signup.png)
 
 ---
