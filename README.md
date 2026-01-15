@@ -21,15 +21,23 @@ Track **income**, **expenses**, and **categories** in real time, explore trends 
 
 ## 🖼️ Screenshots
 
-Add screenshots under a `screenshots/` folder:
+### 📊 Dashboard
+![Dashboard](./public/screenshots/dashboard.png)
 
-- Dashboard
-- Income
-- Expense
-- Categories
-- Filters
-- Auth
-- Profile
+### 🗂️ Categories
+![Categories](./public/screenshots/categories.png)
+
+### 💸 Expenses
+![Expenses](./public/screenshots/expense.png)
+
+### 💰 Income
+![Income](./public/screenshots/income.png)
+
+### 🧠 Smart Filters
+![Filters](./public/screenshots/filters.png)
+
+### 🔐 Signup
+![Signup](./public/screenshots/signup.png)
 
 ---
 
