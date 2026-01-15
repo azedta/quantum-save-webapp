@@ -19,6 +19,19 @@ Track **income**, **expenses**, and **categories** in real time, explore trends 
 
 ---
 
+## 🚀 Features
+
+### 🧩 Core Product
+- 🏠 Dashboard overview
+- 💰 Income management (add / list / delete + Excel export)
+- 💸 Expense management (add / list / delete + Excel export)
+- 🏷️ Categories with emoji icons 😄
+- 🧠 Smart Filters (date, keyword, sorting)
+- 🔐 Auth flows (login / signup / verify email)
+- 👤 Profile photo upload (Cloudinary ☁️)
+
+---
+
 ## 🖼️ Screenshots
 
 ### 📊 Dashboard
@@ -50,19 +63,6 @@ Track **income**, **expenses**, and **categories** in real time, explore trends 
 > Clean, guided onboarding with profile personalization from the start.
 
 ![Signup](./public/screenshots/signup.png)
-
----
-
-## 🚀 Features
-
-### 🧩 Core Product
-- 🏠 Dashboard overview
-- 💰 Income management (add / list / delete + Excel export)
-- 💸 Expense management (add / list / delete + Excel export)
-- 🏷️ Categories with emoji icons 😄
-- 🧠 Smart Filters (date, keyword, sorting)
-- 🔐 Auth flows (login / signup / verify email)
-- 👤 Profile photo upload (Cloudinary ☁️)
 
 ---
 
